@@ -1,8 +1,8 @@
 {
   "name": "compend",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "A reference engine for AI agents. Index your Markdown skills, prompts, and knowledge bases — serve them as just-in-time grounding with hybrid search and dynamic context.",
-  "license": "MIT",
+  "license": "GPL-3.0-only",
   "keywords": ["ai", "agent", "reference", "knowledge", "skills", "markdown", "okf"],
   "repository": {
     "type": "git",
