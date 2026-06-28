@@ -107,32 +107,6 @@ export function getIndexPaths() {
   const paths = [];
 
   try {
-    const opencodePaths = [
-      join(homedir(), '.config', 'opencode', 'opencode.json'),
-    ];
-    for (const p of opencodePaths) {
-      if (existsSync(p)) {
-        const raw = readFileSync(p, 'utf-8').trim();
-        if (raw) {
-          const cfg = JSON.parse(raw);
-          if (cfg.skills && Array.isArray(cfg.skills.paths)) {
-            for (const sp of cfg.skills.paths) {
-              paths.push(resolveTilde(sp));
-            }
-          }
-          if (cfg.instructions && Array.isArray(cfg.instructions)) {
-            for (const ip of cfg.instructions) {
-              paths.push(resolveTilde(ip));
-            }
-          }
-        }
-      }
-    }
-  } catch (e) {
-    console.warn('Compend: could not read opencode.json:', e.message);
-  }
-
-  try {
     const compendCfg = readConfigFile();
     if (compendCfg.index && Array.isArray(compendCfg.index.paths)) {
       for (const p of compendCfg.index.paths) {

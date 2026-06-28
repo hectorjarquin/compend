@@ -95,7 +95,7 @@ npm link  # creates global compend command
 
 Find your exact path with `npm root -g` — append `/compend/index.js`.
 
-Concepts are discovered automatically from your opencode.json `skills.paths` and `instructions` directories. Add custom project knowledge bundles via `~/.compend/config.json`.
+Concepts are discovered from paths configured in `~/.compend/config.json` → `index.paths`. Add custom project knowledge bundles and skill directories there.
 
 ## Updating
 
@@ -261,7 +261,7 @@ Create an optional JSON config file to customize operational settings. All keys 
 | `dashboard.paginationLimit` | number | `50` | Default page size for dashboard API |
 | `dashboard.maxLimit` | number | `200` | Hard cap on API page size |
 | `schemas.default.types` | object | built-in set | Type definitions with `statuses` and `defaults` |
-| `index.paths` | string[] | `[]` | Additional paths to scan for `.md` files (appended to opencode auto-discovered paths) |
+| `index.paths` | string[] | `[]` | Paths to scan for `.md` files. These are the only paths Compend indexes. Add skill directories, knowledge bundles, and convention files here. |
 
 ### Environment Variables
 
@@ -272,20 +272,24 @@ Create an optional JSON config file to customize operational settings. All keys 
 
 ### Path Discovery
 
-Compend auto-discovers filesystem paths from your opencode.json:
-
-1. `skills.paths` — skill directories (scanned recursively for `*.md`)
-2. `instructions` — instruction files (indexed directly)
-
-Additional paths can be added via `index.paths` in `~/.compend/config.json`. This is where you add project OKF knowledge bundles:
+Compend indexes only paths configured in `~/.compend/config.json` →
+`index.paths`. No tool configs are read — Compend is tool-agnostic and
+works identically with any AI client.
 
 ```json
 {
   "index": {
-    "paths": ["/home/user/projects/my-project/knowledge"]
+    "paths": [
+      "/home/user/.github/skills",
+      "/home/user/projects/my-project/knowledge"
+    ]
   }
 }
 ```
+
+Each path is scanned recursively for `.md` files on `compend_index`.
+Add skill directories, OKF knowledge bundles, and convention file
+directories here.
 
 ## Architecture
 
