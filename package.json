@@ -1,11 +1,27 @@
 {
   "name": "compend",
-  "version": "0.0.1",
-  "description": "A reference engine for AI agents. Index your Markdown skills, prompts, and knowledge bases — serve them as just-in-time grounding with hybrid search and dynamic context.",
+  "version": "1.0.0",
+  "description": "A reference engine for AI agents. Index your Markdown skills with hybrid search and dynamic context.",
+  "author": "Hector Jarquin",
+  "type": "module",
   "license": "GPL-3.0-only",
-  "keywords": ["ai", "agent", "reference", "knowledge", "skills", "markdown", "okf"],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/hectorjarquin/compend.git"
+  },
+  "main": "index.js",
+  "bin": {
+    "compend": "dashboard.js"
+  },
+  "scripts": {
+    "start": "node dashboard.js",
+    "stop": "node dashboard.js stop",
+    "restart": "node dashboard.js restart"
+  },
+  "keywords": ["ai", "agent", "reference", "knowledge", "skills", "markdown", "okf"],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "better-sqlite3": "^11.0.0",
+    "sqlite-vec": "^0.1.9"
   }
 }

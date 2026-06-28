@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compend</title>
+<meta name="description" content="Compend knowledge reference dashboard">
+<link rel="stylesheet" href="/style.css">
+<link rel="icon" href="/logo.svg" type="image/svg+xml">
+</head>
+<body>
+<div id="app" role="application" aria-label="Compend knowledge reference dashboard">
+<header role="banner">
+  <div class="logo-title">
+    <svg xmlns="http://www.w3.org/2000/svg" height="28" viewBox="0 -960 960 960" width="28" fill="currentColor" aria-hidden="true"><path d="M440-278v-394q-41-24-87-36t-93-12q-36 0-71.5 7T120-692v396q35-12 69.5-18t70.5-6q47 0 91.5 10.5T440-278Zm40 118q-48-38-104-59t-116-21q-42 0-82.5 11T100-198q-21 11-40.5-1T40-234v-482q0-11 5.5-21T62-752q46-24 96-36t102-12q74 0 126 17t112 52q11 6 16.5 14t5.5 21v418q44-21 88.5-31.5T700-320q36 0 70.5 6t69.5 18v-481q15 5 29.5 11t28.5 14q11 5 16.5 15t5.5 21v482q0 23-19.5 35t-40.5 1q-37-20-77.5-31T700-240q-60 0-116 21t-104 59Zm140-240v-440l120-40v440l-120 40Zm-340-99Z"/></svg>
+    <h1>Compend</h1>
+  </div>
+  <div>
+    <button id="theme-btn" class="theme-btn" aria-label="Toggle theme"><svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor" aria-hidden="true"><path d="M337.5-463Q311-498 289-537q-5 14-6.5 28.5T281-480q0 83 58 141t141 58q14 0 28.5-2t28.5-6q-39-22-74-48.5T396-396q-32-32-58.5-67ZM567-364.5Q630-328 702-308q-40 51-98 79.5T481-200q-117 0-198.5-81.5T201-480q0-65 28.5-123t79.5-98q20 72 56.5 135T453-452q51 51 114 87.5ZM743-380q-20-5-39.5-11T665-405q8-18 11.5-36.5T680-480q0-83-58.5-141.5T480-680q-20 0-38.5 3.5T405-665q-8-19-13.5-38T381-742q24-9 49-13.5t51-4.5q117 0 198.5 81.5T761-480q0 26-4.5 51T743-380ZM440-840v-120h80v120h-80Zm0 840v-120h80V0h-80Zm323-706-57-57 85-84 57 56-85 85ZM169-113l-57-56 85-85 57 57-85 84Zm671-327v-80h120v80H840ZM0-440v-80h120v80H0Zm791 328-85-85 57-57 84 85-56 57ZM197-706l-84-85 56-57 85 85-57 57Zm199 310Z"></path></svg></button>
+  </div>
+</header>
+
+<div class="filters" role="search" aria-label="Filter concepts">
+  <div class="filter-row">
+    <div class="field">
+      <label for="type">Type</label>
+      <select id="type" aria-label="Filter by type"><option value="">all</option></select>
+    </div>
+    <div class="field">
+      <label for="status">Status</label>
+      <select id="status" aria-label="Filter by status"><option value="">any</option><option value="stable">stable</option><option value="draft">draft</option><option value="deprecated">deprecated</option></select>
+    </div>
+    <div class="field search-field">
+      <label for="search">Search</label>
+      <input id="search" placeholder="Search concepts..." autocomplete="off" aria-label="Search concepts" role="searchbox">
+    </div>
+  </div>
+  <div id="tags-filter" class="tags-bar" aria-label="Filter by tags"></div>
+</div>
+<div id="error" role="alert" aria-live="assertive"></div>
+<div id="stats" role="status" aria-live="polite">Loading...</div>
+
+<div id="loading-skeleton" aria-hidden="true" style="display:none">
+  <table aria-hidden="true">
+    <thead><tr><th>Type</th><th>Title</th><th>Description</th><th>Tags</th><th>Status</th></tr></thead>
+    <tbody id="skeleton-body"></tbody>
+  </table>
+</div>
+
+<div id="table-wrap">
+  <table aria-label="Concepts list">
+    <thead>
+      <tr><th scope="col">Type</th><th scope="col">Title</th><th scope="col">Description</th><th scope="col">Tags</th><th scope="col">Status</th></tr>
+    </thead>
+    <tbody id="tbody" aria-live="polite" aria-relevant="additions removals"></tbody>
+  </table>
+</div>
+<div id="pagination" role="navigation" aria-label="Pagination"></div>
+</div>
+
+<div id="toast-container" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<script>if(localStorage.getItem('compend-theme')==='light'){document.documentElement.setAttribute('data-theme','light')}</script>
+<script src="/app.js"></script>
+</body>
+</html>
