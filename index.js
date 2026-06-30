@@ -27,7 +27,7 @@ process.on('SIGTERM', () => { try { db.close(); } catch {} process.exit(0); });
 process.on('SIGINT', () => { try { db.close(); } catch {} process.exit(0); });
 
 const server = new Server(
-  { name: 'compend', version: '1.0.0' },
+  { name: 'compend', version: '1.2.0' },
   { capabilities: { tools: {} } }
 );
 
@@ -61,11 +61,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'compend_get',
-      description: 'Retrieve a full concept by slug, including frontmatter, body, references (children), and dependencies.',
+      description: 'Retrieve a full concept by slug. Set resolve_dependencies:true to recursively fetch all dependency bodies in one call (resolved[] array).',
       inputSchema: {
         type: 'object',
         properties: {
-          slug: { type: 'string', description: 'Concept slug (e.g. "wp-image-to-blocks")' }
+          slug: { type: 'string', description: 'Concept slug (e.g. "wp-image-to-blocks")' },
+          resolve_dependencies: { type: 'boolean', description: 'If true, recursively resolve dependency bodies. Returns a resolved[] array with full concept objects.' }
         },
         required: ['slug']
       }
@@ -131,7 +132,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'compend_get': {
-        const concept = getConcept(args.slug);
+        const concept = getConcept(args.slug, !!args.resolve_dependencies);
         if (!concept) {
           return {
             content: [{ type: 'text', text: JSON.stringify({ error: 'Concept not found: ' + args.slug }) }],

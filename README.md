@@ -154,21 +154,22 @@ Hybrid FTS + vector search across indexed concepts. Returns metadata with snippe
 | `limit` | number | no | `10` | Max results |
 | `alpha` | number | no | `0.3` | Vector weight. `0` = FTS-only, `1` = vector-only |
 
-Returns concepts sorted by relevance (score 0–1) with `id`, `slug`, `type`, `title`, `description`, `tags`, `status`, `source`, `score`, and `snippet`.
+Returns concepts sorted by relevance (score 0–1) with `id`, `slug`, `type`, `title`, `description`, `tags`, `status`, `source`, `body_length`, `approx_tokens`, `score`, and `snippet`.
 
 ### `compend_get`
 
-Retrieve a full concept by slug. Includes frontmatter JSON, markdown body, child references (concepts whose slug starts with `{slug}/`), and dependencies (from the OKF `dependencies` frontmatter field).
+Retrieve a full concept by slug. Includes frontmatter JSON, markdown body, child references (concepts whose slug starts with `{slug}/`), and dependencies (from the OKF `dependencies` frontmatter field). Set `resolve_dependencies: true` to recursively fetch all dependency bodies in one call — returns a `resolved[]` array with full concept objects.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `slug` | string | yes | — | Concept slug (e.g. `"wp-image-to-blocks"`) |
+| `resolve_dependencies` | boolean | no | `false` | If `true`, recursively resolve dependency bodies. Returns `resolved[]` array with full concept objects. |
 
-Returns `{ id, slug, type, title, description, tags, status, frontmatter, body, references: [...], dependencies: [...] }`.
+Returns `{ id, slug, type, title, description, tags, status, frontmatter, body, body_length, approx_tokens, references: [...], dependencies: [...] }`. With `resolve_dependencies: true`, also includes `resolved: [...]`.
 
 ### `compend_list`
 
-List concepts with optional filters. Returns compact metadata — no body.
+List concepts with optional filters. Returns compact metadata including `body_length` — no body.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|

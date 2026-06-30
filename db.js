@@ -58,6 +58,8 @@ export function initDb() {
   // Migrations
   try { db.exec('ALTER TABLE concepts ADD COLUMN timestamp TEXT'); } catch {}
   try { db.exec('ALTER TABLE concepts ADD COLUMN resource TEXT'); } catch {}
+  try { db.exec('ALTER TABLE concepts ADD COLUMN body_length INTEGER DEFAULT 0'); } catch {}
+  try { db.exec("UPDATE concepts SET body_length = LENGTH(body) WHERE body_length = 0 AND body != ''"); } catch {}
 
   const needsAutoIndex = db.prepare('SELECT COUNT(*) as c FROM concepts').get().c === 0;
   if (needsAutoIndex) {
@@ -186,6 +188,7 @@ function indexSingleFile(filePath, scanPaths) {
   const frontmatterJson = JSON.stringify(frontmatter);
   const timestamp = frontmatter.timestamp || null;
   const resource = frontmatter.resource || null;
+  const bodyLength = body.length;
 
   const now = Math.floor(Date.now() / 1000);
   const embedding = createEmbedding(body);
@@ -193,9 +196,9 @@ function indexSingleFile(filePath, scanPaths) {
   if (existing) {
     db.prepare(`
       UPDATE concepts SET type=?, title=?, description=?, tags=?, status=?, frontmatter=?, body=?,
-      file_hash=?, timestamp=?, resource=?, updated_at=?
+      body_length=?, file_hash=?, timestamp=?, resource=?, updated_at=?
       WHERE id=?
-    `).run(type, title, description, tags, status, frontmatterJson, body, hash, timestamp, resource, now, existing.id);
+    `).run(type, title, description, tags, status, frontmatterJson, body, bodyLength, hash, timestamp, resource, now, existing.id);
 
     db.prepare('DELETE FROM concepts_fts WHERE rowid = ?').run(existing.id);
     db.prepare('INSERT INTO concepts_fts (rowid, title, description, tags, body) VALUES (?, ?, ?, ?, ?)')
@@ -209,9 +212,9 @@ function indexSingleFile(filePath, scanPaths) {
   }
 
   const result = db.prepare(`
-    INSERT INTO concepts (slug, type, title, description, tags, status, frontmatter, body, file_path, file_hash, source, timestamp, resource, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'local', ?, ?, ?, ?)
-  `).run(slug, type, title, description, tags, status, frontmatterJson, body, filePath, hash, timestamp, resource, now, now);
+    INSERT INTO concepts (slug, type, title, description, tags, status, frontmatter, body, body_length, file_path, file_hash, source, timestamp, resource, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'local', ?, ?, ?, ?)
+  `).run(slug, type, title, description, tags, status, frontmatterJson, body, bodyLength, filePath, hash, timestamp, resource, now, now);
 
   const id = result.lastInsertRowid;
   db.prepare('INSERT INTO concepts_fts (rowid, title, description, tags, body) VALUES (?, ?, ?, ?, ?)')
@@ -365,7 +368,7 @@ export function searchHybrid({ query, type, tags, limit, alpha } = {}) {
   let ftsResults = [];
   const escapedQuery = query.replace(/"/g, '').replace(/'/g, '');
   if (escapedQuery.trim()) {
-    let ftsSql = `SELECT c.id, c.slug, c.type, c.title, c.description, c.tags, c.status, c.source,
+    let ftsSql = `SELECT c.id, c.slug, c.type, c.title, c.description, c.tags, c.status, c.source, c.body_length,
       bm25(concepts_fts, 0) AS rank
       FROM concepts c
       JOIN concepts_fts f ON f.rowid = c.id
@@ -390,7 +393,7 @@ export function searchHybrid({ query, type, tags, limit, alpha } = {}) {
     for (const r of ftsResults) {
       const normalized = 1 - (Math.abs(r.rank) / maxRank);
       scores.set(r.id, { id: r.id, slug: r.slug, type: r.type, title: r.title,
-        description: r.description, tags: r.tags, status: r.status, source: r.source, score: normalized });
+        description: r.description, tags: r.tags, status: r.status, source: r.source, body_length: r.body_length, score: normalized });
     }
   }
 
@@ -401,7 +404,7 @@ export function searchHybrid({ query, type, tags, limit, alpha } = {}) {
       if (scores.has(r.id)) {
         scores.get(r.id).score = (1 - alphaValue) * scores.get(r.id).score + alphaValue * normalized;
       } else {
-        const concept = db.prepare('SELECT c.id, c.slug, c.type, c.title, c.description, c.tags, c.status, c.source FROM concepts c WHERE c.id = ?').get(r.id);
+        const concept = db.prepare('SELECT c.id, c.slug, c.type, c.title, c.description, c.tags, c.status, c.source, c.body_length FROM concepts c WHERE c.id = ?').get(r.id);
         if (concept) {
           scores.set(r.id, { ...concept, score: alphaValue * normalized });
         }
@@ -437,13 +440,15 @@ export function searchHybrid({ query, type, tags, limit, alpha } = {}) {
       tags: tagsParsed,
       status: r.status,
       source: r.source,
+      body_length: r.body_length || 0,
+      approx_tokens: Math.round((r.body_length || 0) / 4),
       score: Math.round(r.score * 100) / 100,
       snippet
     };
   });
 }
 
-export function getConcept(slug) {
+export function getConcept(slug, resolveDeps = false, visited = new Set()) {
   initDb();
   const concept = db.prepare('SELECT * FROM concepts WHERE slug = ?').get(slug);
   if (!concept) return null;
@@ -463,7 +468,18 @@ export function getConcept(slug) {
     }
   }
 
-  return {
+  let resolved = [];
+  if (resolveDeps) {
+    visited.add(slug);
+    for (const dep of dependencies) {
+      if (!visited.has(dep.slug)) {
+        const fullDep = getConcept(dep.slug, true, visited);
+        if (fullDep) resolved.push(fullDep);
+      }
+    }
+  }
+
+  const result = {
     id: concept.id,
     slug: concept.slug,
     type: concept.type,
@@ -474,11 +490,15 @@ export function getConcept(slug) {
     source: concept.source,
     timestamp: concept.timestamp,
     resource: concept.resource,
+    body_length: concept.body_length,
+    approx_tokens: Math.round((concept.body_length || 0) / 4),
     frontmatter,
     body: concept.body,
     references,
     dependencies
   };
+  if (resolveDeps) result.resolved = resolved;
+  return result;
 }
 
 export function listConcepts({ type, tags, status, limit, offset } = {}) {
@@ -502,7 +522,7 @@ export function listConcepts({ type, tags, status, limit, offset } = {}) {
   }
 
   const total = db.prepare('SELECT COUNT(*) as c FROM concepts ' + whereClause).get(...params).c;
-  const rows = db.prepare('SELECT id, slug, type, title, description, tags, status, source, timestamp, resource, created_at, updated_at FROM concepts ' + whereClause + ' ORDER BY updated_at DESC LIMIT ? OFFSET ?')
+  const rows = db.prepare('SELECT id, slug, type, title, description, tags, status, source, timestamp, resource, body_length, created_at, updated_at FROM concepts ' + whereClause + ' ORDER BY updated_at DESC LIMIT ? OFFSET ?')
     .all(...params, listLimit, listOffset)
     .map(r => ({
       id: r.id,
@@ -513,7 +533,9 @@ export function listConcepts({ type, tags, status, limit, offset } = {}) {
       tags: typeof r.tags === 'string' ? JSON.parse(r.tags || '[]') : (r.tags || []),
       status: r.status,
       source: r.source,
-      timestamp: r.timestamp
+      timestamp: r.timestamp,
+      body_length: r.body_length,
+      approx_tokens: Math.round((r.body_length || 0) / 4)
     }));
 
   return { concepts: rows, total, limit: listLimit, offset: listOffset };

@@ -5,6 +5,25 @@ All notable changes to Compend will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-06-29
+
+### Added
+- `resolve_dependencies` parameter on `compend_get`. When `true`, recursively
+  resolves all dependency bodies in one call. Returns a `resolved[]` array with
+  full concept objects. Circular deps handled via visited tracking. One call
+  instead of N+2 for deep dependency trees.
+- `body_length` field on all concept responses (`compend_search`,
+  `compend_list`, `compend_get`). Character count of the concept body, computed
+  at index time. Auto-migrated with backfill for existing databases — no manual
+  steps. Companion `approx_tokens` field (`Math.round(body_length / 4)`)
+  included in all responses for quick context-pressure estimation.
+
+### Changed
+- `compend_get`, `compend_search`, `compend_list` all include `body_length` in
+  their response objects.
+- Database schema: `concepts` table gains `body_length INTEGER` column with
+  auto-migration + backfill on `initDb()`.
+
 ## [1.1.0] - 2026-06-28
 
 ### Removed
