@@ -2,7 +2,7 @@
 
 # Compend
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
 
 **Author:** [Hector Jarquin](https://hectorjarquin.com)
 
@@ -222,6 +222,49 @@ Type is inferred from OKF frontmatter, file path, or directory location. Unknown
 }
 ```
 
+## Concept Best Practices
+
+Add these instructions to your `CLAUDE.md`, `AGENTS.md`, or `.opencode/`
+instruction file.
+
+```
+Skills, agents, instructions, prompts, workflows, references, and
+knowledge bases are indexed in the Compend MCP server. The
+available_skills block in the system prompt does NOT reflect
+Compend-indexed skills — you must discover them via compend_search.
+
+Before any task that might have pre-existing guidance, run the
+discovery cascade:
+
+1. Compend (global index) — compend_search({ query }). Compend
+   returns structured metadata: skills, agents, instructions, prompts,
+   workflows, references, and knowledge bases. If multiple results
+   match, load the most relevant via compend_get({ slug }).
+2. Convention files (local) — in parallel with Compend, check the repo
+   and its parent directories for convention files: .opencode/,
+   AGENTS.md, CLAUDE.md, .cursor/rules/, and project-root instruction
+   files. Skip paths already tracked in ~/.compend/config.json →
+   index.paths (already indexed).
+3. Ad-hoc (context) — if no match in Compend or convention files,
+   pattern-match from context: existing code, file structure, naming
+   conventions, and neighboring files.
+
+Use compend_get({ slug, resolve_dependencies: true }) to load a skill
+with its full dependency tree in one call.
+
+Check approx_tokens in search results before loading — skip skills that
+would overwhelm your context window.
+
+If you already know the exact slug and file path from a prior session,
+use read directly. Compend is a discovery engine, not a retrieval tool.
+
+Compend stores seven concept types: skill, agent, instruction, prompt,
+workflow, reference, and knowledge.
+
+To index new content: compend_index({ path }). After indexing, verify
+discoverability with compend_search.
+```
+
 ## Configuration
 
 ### Config File (`~/.compend/config.json`)
@@ -386,4 +429,4 @@ Open an issue or PR at [github.com/hectorjarquin/compend](https://github.com/hec
 
 ## License
 
-GNU General Public License v3.0 or later — see [LICENSE](LICENSE) for details.
+MIT License — see [LICENSE](LICENSE) for details.

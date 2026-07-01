@@ -5,6 +5,16 @@ All notable changes to Compend will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-06-30
+
+### Changed
+- Relicensed from GPL-3.0-only to MIT. Prior versions remain GPL-3.0-only.
+
+### Added
+- LICENSE file included in repository and npm package for the first time.
+- Concept Best Practices section — copy-pasteable agent instructions for
+  the skill discovery protocol.
+
 ## [1.2.0] - 2026-06-29
 
 ### Added
