@@ -142,6 +142,16 @@ Remove concepts from the index. Pass `{ slug }` to remove one concept, or `{ pat
 
 Returns `{ removed: [...slugs], total: N }`.
 
+### `compend_context`
+
+Retrieve a concept body as formatted text for prompt injection.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `slug` | string | yes | — | Concept slug (e.g. `"wp-image-to-blocks"`) |
+
+Returns `(type) slug: title` followed by the full markdown body. Use for local and remote concept retrieval in a single call.
+
 ### `compend_search`
 
 Hybrid FTS + vector search across indexed concepts. Returns metadata with snippet and relevance score.
@@ -149,7 +159,7 @@ Hybrid FTS + vector search across indexed concepts. Returns metadata with snippe
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `query` | string | yes | — | Search query text |
-| `type` | string | no | — | Filter by concept type (skill, agent, instruction, etc.) |
+| `type` | string[] | no | — | Filter by concept types (e.g. `["skill", "reference"]`). Single strings still work. Empty arrays are ignored. |
 | `tags` | string[] | no | — | Filter by tags (AND match) |
 | `limit` | number | no | `10` | Max results |
 | `alpha` | number | no | `0.3` | Vector weight. `0` = FTS-only, `1` = vector-only |
@@ -256,7 +266,8 @@ Check approx_tokens in search results before loading — skip skills that
 would overwhelm your context window.
 
 If you already know the exact slug and file path from a prior session,
-use read directly. Compend is a discovery engine, not a retrieval tool.
+use read directly. For remote or unknown concepts, use compend_context
+to retrieve the full body as formatted text in one call.
 
 Compend stores seven concept types: skill, agent, instruction, prompt,
 workflow, reference, and knowledge.
@@ -378,7 +389,7 @@ If the SSE connection drops, a 30-second fallback poll resumes.
 
 ```
 compend/
-├── index.js                MCP stdio server (5 tool handlers)
+├── index.js                MCP stdio server (6 tool handlers)
 ├── dashboard.js            HTTP dashboard + SSE broadcast server
 ├── dashboard/
 │   ├── api-handler.js      Dashboard REST API routes

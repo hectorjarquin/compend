@@ -4,7 +4,7 @@ import { Server } from '@modelcontextprotocol/sdk/server';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
-import { initDb, indexConcepts, indexFile, deindexConcepts, searchHybrid, getConcept, listConcepts } from './db.js';
+import { initDb, indexConcepts, indexFile, deindexConcepts, searchHybrid, getConcept, getConceptContext, listConcepts } from './db.js';
 import { getConfig } from './config.js';
 import http from 'node:http';
 
@@ -27,7 +27,7 @@ process.on('SIGTERM', () => { try { db.close(); } catch {} process.exit(0); });
 process.on('SIGINT', () => { try { db.close(); } catch {} process.exit(0); });
 
 const server = new Server(
-  { name: 'compend', version: '2.0.0' },
+  { name: 'compend', version: '2.0.1' },
   { capabilities: { tools: {} } }
 );
 
@@ -51,7 +51,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         type: 'object',
         properties: {
           query: { type: 'string', description: 'Search query text' },
-          type: { type: 'string', description: 'Optional. Filter by concept type (skill, agent, instruction, etc.)' },
+          type: { type: 'array', items: { type: 'string' }, description: 'Optional. Filter by concept types (e.g. ["skill", "reference"])' },
           tags: { type: 'array', items: { type: 'string' }, description: 'Optional. Filter by tags (AND match)' },
           limit: { type: 'number', description: 'Max results (default 10)' },
           alpha: { type: 'number', description: 'Vector weight 0-1, 0=only FTS, 1=only vector (default 0.3)' }
@@ -96,6 +96,17 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           path: { type: 'string', description: 'Directory or file path — all concepts whose file_path starts with this are removed' }
         },
         required: []
+      }
+    },
+    {
+      name: 'compend_context',
+      description: 'Retrieve a concept body as formatted text for prompt injection. Returns (type) slug: title followed by the full markdown body. Use for local and remote concept retrieval in a single call.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          slug: { type: 'string', description: 'Concept slug (e.g. "wp-image-to-blocks")' }
+        },
+        required: ['slug']
       }
     }
   ]
@@ -161,6 +172,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         });
         return {
           content: [{ type: 'text', text: JSON.stringify(result) }]
+        };
+      }
+
+      case 'compend_context': {
+        const text = getConceptContext(args.slug);
+        if (!text) {
+          return {
+            content: [{ type: 'text', text: 'Concept not found: ' + args.slug }],
+            isError: true
+          };
+        }
+        return {
+          content: [{ type: 'text', text: text }]
         };
       }
 

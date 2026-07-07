@@ -355,7 +355,13 @@ export function searchHybrid({ query, type, tags, limit, alpha } = {}) {
       WHERE v.embedding MATCH ?`;
     const vecParams = [Buffer.from(queryEmbedding.buffer), Buffer.from(queryEmbedding.buffer)];
 
-    if (type) { vecSql += ' AND c.type = ?'; vecParams.push(type); }
+    if (type) {
+      const types = Array.isArray(type) ? type : [type];
+      if (types.length > 0) {
+        vecSql += ' AND c.type IN (' + types.map(() => '?').join(',') + ')';
+        vecParams.push(...types);
+      }
+    }
 
     vecSql += ' ORDER BY distance LIMIT ?';
     vecParams.push(Math.max(searchLimit * 3, 50));
@@ -375,7 +381,13 @@ export function searchHybrid({ query, type, tags, limit, alpha } = {}) {
       WHERE concepts_fts MATCH ?`;
     const ftsParams = ['"' + escapedQuery.replace(/\s+/g, '" OR "') + '"'];
 
-    if (type) { ftsSql += ' AND c.type = ?'; ftsParams.push(type); }
+    if (type) {
+      const types = Array.isArray(type) ? type : [type];
+      if (types.length > 0) {
+        ftsSql += ' AND c.type IN (' + types.map(() => '?').join(',') + ')';
+        ftsParams.push(...types);
+      }
+    }
     ftsSql += ' ORDER BY rank LIMIT ?';
     ftsParams.push(Math.max(searchLimit * 3, 50));
 
@@ -499,6 +511,15 @@ export function getConcept(slug, resolveDeps = false, visited = new Set()) {
   };
   if (resolveDeps) result.resolved = resolved;
   return result;
+}
+
+export function getConceptContext(slug) {
+  initDb();
+  const concept = db.prepare(
+    'SELECT type, title, body FROM concepts WHERE slug = ?'
+  ).get(slug);
+  if (!concept) return null;
+  return `(${concept.type}) ${slug}: ${concept.title || ''}\n\n${concept.body}`;
 }
 
 export function listConcepts({ type, tags, status, limit, offset } = {}) {
