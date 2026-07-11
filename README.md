@@ -303,7 +303,8 @@ Create an optional JSON config file to customize operational settings. All keys 
   },
   "index": {
     "paths": []
-  }
+  },
+  "notifySubscribers": ["cordenar"]
 }
 ```
 
@@ -316,7 +317,8 @@ Create an optional JSON config file to customize operational settings. All keys 
 | `dashboard.paginationLimit` | number | `50` | Default page size for dashboard API |
 | `dashboard.maxLimit` | number | `200` | Hard cap on API page size |
 | `schemas.default.types` | object | built-in set | Type definitions with `statuses` and `defaults` |
-| `index.paths` | string[] | `[]` | Paths to scan for `.md` files. These are the only paths Compend indexes. Add skill directories, knowledge bundles, and convention files here. |
+| `index.paths` | string[] | `[]` | Paths to scan for `.md` files |
+| `notifySubscribers` | array | `[]` | Service names to notify on index events (reads `~/.{name}/manifest.json` for endpoint URL) |
 
 ### Environment Variables
 
@@ -324,6 +326,7 @@ Create an optional JSON config file to customize operational settings. All keys 
 |----------|----------------------|---------|
 | `COMPEND_PORT` | `port` | `3457` |
 | `COMPEND_DB_PATH` | `dbPath` | `~/.compend/concepts.db` |
+| `COMPEND_NOTIFY_SUBSCRIBERS` | `notifySubscribers` | — (comma-separated) |
 
 ### Path Discovery
 
@@ -384,6 +387,18 @@ MCP server (index.js) → `notifyDash()` → dashboard `/api/notify` → `broadc
 | `index_complete` | `compend_index`, `compend_deindex` | Toast with count summary + reload list |
 
 If the SSE connection drops, a 30-second fallback poll resumes.
+
+### Cross-Tool Notifications
+
+Compend can notify other tools when its index changes via `notifySubscribers`.
+When configured, `compend_index` events will POST to each subscriber's endpoint.
+Subscribers discover each other by convention — each tool writes a `manifest.json`
+on startup with `{ "name": "...", "notifyEndpoint": "..." }`. When a subscriber
+is not running, the POST silently fails (logged only as a missed event).
+
+See [Cordenar MCP](https://github.com/hectorjarquin/cordenar-mcp) for an
+example subscriber implementing a real-time synapse dashboard via this
+mechanism.
 
 ## Project Structure
 

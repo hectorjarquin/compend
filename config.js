@@ -25,7 +25,8 @@ const DEFAULTS = {
         knowledge:   { statuses: [], defaults: {} }
       }
     }
-  }
+  },
+  notifySubscribers: []
 };
 
 const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -73,6 +74,9 @@ function applyEnvOverrides(cfg) {
   }
   if (process.env.COMPEND_DB_PATH && process.env.COMPEND_DB_PATH.trim()) {
     cfg.dbPath = resolveTilde(process.env.COMPEND_DB_PATH.trim());
+  }
+  if (process.env.COMPEND_NOTIFY_SUBSCRIBERS && process.env.COMPEND_NOTIFY_SUBSCRIBERS.trim()) {
+    cfg.notifySubscribers = process.env.COMPEND_NOTIFY_SUBSCRIBERS.trim().split(',').map(s => s.trim()).filter(Boolean);
   }
 }
 

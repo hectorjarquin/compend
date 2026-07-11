@@ -7,6 +7,9 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 import { initDb, indexConcepts, indexFile, deindexConcepts, searchHybrid, getConcept, getConceptContext, listConcepts } from './db.js';
 import { getConfig } from './config.js';
 import http from 'node:http';
+import { readFileSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 
 const DASH_PORT = getConfig().port;
 
@@ -19,6 +22,25 @@ function notifyDash(event, data) {
   req.on('error', () => {});
   req.write(body);
   req.end();
+
+  const subscribers = getConfig().notifySubscribers;
+  if (!subscribers.length) return;
+
+  for (const name of subscribers) {
+    try {
+      const manifestPath = join(homedir(), '.' + name, 'manifest.json');
+      const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'));
+      if (manifest.notifyEndpoint) {
+        const ext = http.request(manifest.notifyEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }
+        });
+        ext.on('error', () => {});
+        ext.write(body);
+        ext.end();
+      }
+    } catch {}
+  }
 }
 
 const db = initDb();
@@ -27,7 +49,7 @@ process.on('SIGTERM', () => { try { db.close(); } catch {} process.exit(0); });
 process.on('SIGINT', () => { try { db.close(); } catch {} process.exit(0); });
 
 const server = new Server(
-  { name: 'compend', version: '2.0.1' },
+  { name: 'compend', version: '2.0.2' },
   { capabilities: { tools: {} } }
 );
 

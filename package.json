@@ -1,6 +1,6 @@
 {
   "name": "compend",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "A reference engine for AI agents. Index your Markdown skills with hybrid search and dynamic context.",
   "author": "Hector Jarquin",
   "type": "module",
