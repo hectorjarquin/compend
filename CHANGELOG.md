@@ -5,6 +5,16 @@ All notable changes to Compend will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.3] - 2026-07-11
+
+### Fixed
+- Slug-based manual de-index (`compend_deindex({ slug: "..." })`) now guards
+  against deleting remote concepts (`source='remote'`). Adds `AND source='local'`
+  to the lookup query at db.js:270, matching the same guard already present in
+  all three automatic deletion paths (bulk re-index, single-file cleanup,
+  path-based de-index). Remote concepts can only be removed by their origin
+  system (e.g., Cordenar sync).
+
 ## [2.0.2] - 2026-07-11
 
 ### Added

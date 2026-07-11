@@ -267,7 +267,7 @@ export function deindexConcepts({ slug, path } = {}) {
   const removed = [];
 
   if (slug) {
-    const concept = db.prepare('SELECT id, slug FROM concepts WHERE slug = ?').get(slug);
+    const concept = db.prepare("SELECT id, slug FROM concepts WHERE slug = ? AND source = 'local'").get(slug);
     if (concept) {
       db.prepare('DELETE FROM concepts WHERE id = ?').run(concept.id);
       db.prepare('DELETE FROM concepts_fts WHERE rowid = ?').run(concept.id);

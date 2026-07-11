@@ -49,7 +49,7 @@ process.on('SIGTERM', () => { try { db.close(); } catch {} process.exit(0); });
 process.on('SIGINT', () => { try { db.close(); } catch {} process.exit(0); });
 
 const server = new Server(
-  { name: 'compend', version: '2.0.2' },
+  { name: 'compend', version: '2.0.3' },
   { capabilities: { tools: {} } }
 );
 
