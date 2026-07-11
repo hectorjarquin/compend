@@ -412,7 +412,7 @@ compend/
 │       ├── index.html      Dashboard HTML + ARIA structure
 │       ├── style.css       Full theme (dark/light), toast, skeleton
 │       ├── app.js          Frontend SSE client, keyboard nav, WCAG 2.1 AA
-│       └── logo.svg        Book icon (48x48, currentColor)
+│       └── logo.svg        Logo (48x48, currentColor)
 ├── db.js                   SQLite init, CRUD, hybrid FTS+vec search
 ├── embedding.js            MurmurHash3 → 256-dim float vector
 ├── config.js               Config loader (defaults ← config.json ← env vars)

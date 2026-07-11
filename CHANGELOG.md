@@ -5,6 +5,28 @@ All notable changes to Compend will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.4] - 2026-07-11
+
+### Added
+- `js-yaml` dependency with `JSON_SCHEMA` for robust YAML frontmatter parsing.
+  Handles block lists (`tags:\n  - foo\n  - bar`), inline arrays, quoted values,
+  and all valid YAML syntax. Replaces the hand-rolled line-by-line parser.
+- `normalizeTags()` at the single ingestion point (`indexSingleFile`).
+  Guarantees the `tags` database column always contains a JSON array regardless
+  of YAML input format (bare comma-separated strings, single tags, empty values).
+
+### Changed
+- Logo: DNA-helix "C" monogram replacing the Material open-book icon across
+  favicon, dashboard header, and README.
+- Table styles: `thead` uses bottom-border instead of solid background, header
+  uses `:focus` instead of `:focus-within`, tighter row padding (8px/6px),
+  removed hover transition for immediate row feedback.
+
+### Fixed
+- Dashboard crash when indexing skills with bare comma-separated `tags` values
+  (e.g., `tags: rls, security, multi-tenant`). The old parser stored these as
+  strings; `.map()` on a string in `app.js` caused TypeError.
+
 ## [2.0.3] - 2026-07-11
 
 ### Fixed

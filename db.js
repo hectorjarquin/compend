@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import { load } from 'sqlite-vec';
+import { load as yamlLoad, JSON_SCHEMA } from 'js-yaml';
 import { createEmbedding } from './embedding.js';
 import { getDbPath, getConfig, resolveTypeSchema, getIndexPaths } from './config.js';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
@@ -83,28 +84,22 @@ function parseFrontmatter(content) {
   const match = content.match(/^---\n([\s\S]*?)\n---\n?/);
   if (!match) return { frontmatter: {}, body: content };
   try {
-    const frontmatter = {};
-    const lines = match[1].split('\n');
-    for (const line of lines) {
-      const colonIdx = line.indexOf(':');
-      if (colonIdx === -1) continue;
-      const key = line.slice(0, colonIdx).trim();
-      const value = line.slice(colonIdx + 1).trim();
-      if (!key) continue;
-      let parsed = value;
-      if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
-        parsed = value.slice(1, -1);
-      } else if (value.startsWith('[') && value.endsWith(']')) {
-        try { parsed = JSON.parse(value); } catch {
-          parsed = value.slice(1, -1).split(',').map(s => s.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
-        }
-      }
-      frontmatter[key] = parsed;
-    }
+    const frontmatter = yamlLoad(match[1], { schema: JSON_SCHEMA }) || {};
     return { frontmatter, body: content.slice(match[0].length) };
   } catch {
     return { frontmatter: {}, body: content };
   }
+}
+
+function normalizeTags(input) {
+  if (input == null) return [];
+  if (Array.isArray(input)) return input;
+  if (typeof input === 'string') {
+    const trimmed = input.trim();
+    if (!trimmed) return [];
+    return trimmed.split(',').map(s => s.trim()).filter(Boolean);
+  }
+  return [];
 }
 
 let _instructionPaths = null;
@@ -184,7 +179,7 @@ function indexSingleFile(filePath, scanPaths) {
 
   const title = frontmatter.title || frontmatter.name || '';
   const description = frontmatter.description || '';
-  const tags = JSON.stringify(frontmatter.tags || []);
+  const tags = JSON.stringify(normalizeTags(frontmatter.tags));
   const frontmatterJson = JSON.stringify(frontmatter);
   const timestamp = frontmatter.timestamp || null;
   const resource = frontmatter.resource || null;
