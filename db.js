@@ -3,8 +3,8 @@ import { load } from 'sqlite-vec';
 import { load as yamlLoad, JSON_SCHEMA } from 'js-yaml';
 import { createEmbedding } from './embedding.js';
 import { getDbPath, getConfig, resolveTypeSchema, getIndexPaths } from './config.js';
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { join, relative, resolve as resolvePath, sep } from 'node:path';
+import { existsSync, readFileSync, readdirSync, statSync, copyFileSync, mkdirSync } from 'node:fs';
+import { join, relative, resolve as resolvePath, sep, dirname } from 'node:path';
 import { createHash } from 'node:crypto';
 
 let db;
@@ -62,6 +62,16 @@ export function initDb() {
   try { db.exec('ALTER TABLE concepts ADD COLUMN body_length INTEGER DEFAULT 0'); } catch {}
   try { db.exec("UPDATE concepts SET body_length = LENGTH(body) WHERE body_length = 0 AND body != ''"); } catch {}
 
+  // Backup before type normalization (one-time safe)
+  try {
+    const bdir = join(dirname(path), 'backups');
+    mkdirSync(bdir, { recursive: true });
+    copyFileSync(path, join(bdir, 'concepts-pre-type-lower-' + Date.now() + '.db'));
+  } catch {}
+
+  // Normalize all concept types to lowercase (idempotent)
+  try { db.exec('UPDATE concepts SET type = LOWER(type)'); } catch {}
+
   const needsAutoIndex = db.prepare('SELECT COUNT(*) as c FROM concepts').get().c === 0;
   if (needsAutoIndex) {
     autoIndex();
@@ -118,7 +128,7 @@ function getInstructionPaths() {
 }
 
 function inferType(pathStr, frontmatter) {
-  if (frontmatter.type) return frontmatter.type;
+  if (frontmatter.type) return frontmatter.type.toLowerCase();
   const lower = pathStr.toLowerCase();
   if (lower.includes('/references/')) return 'reference';
   if (lower.includes('/example/')) return 'reference';
@@ -335,11 +345,12 @@ export function indexConcepts(scanPaths) {
   return { added, updated, removed, total: db.prepare('SELECT COUNT(*) as c FROM concepts').get().c };
 }
 
-export function searchHybrid({ query, type, tags, limit, alpha } = {}) {
+export function searchHybrid({ query, type, tags, limit, offset = 0, alpha } = {}) {
   initDb();
   const cfg = getConfig();
   const searchLimit = limit || cfg.search.limit;
   const alphaValue = alpha !== undefined ? alpha : cfg.search.alpha;
+  const candidateLimit = Math.max((offset + searchLimit) * 3, 50);
 
   let vectorResults = [];
   if (alphaValue > 0) {
@@ -359,7 +370,7 @@ export function searchHybrid({ query, type, tags, limit, alpha } = {}) {
     }
 
     vecSql += ' ORDER BY distance LIMIT ?';
-    vecParams.push(Math.max(searchLimit * 3, 50));
+    vecParams.push(candidateLimit);
 
     try {
       vectorResults = db.prepare(vecSql).all(...vecParams);
@@ -384,14 +395,14 @@ export function searchHybrid({ query, type, tags, limit, alpha } = {}) {
       }
     }
     ftsSql += ' ORDER BY rank LIMIT ?';
-    ftsParams.push(Math.max(searchLimit * 3, 50));
+    ftsParams.push(candidateLimit);
 
     try {
       ftsResults = db.prepare(ftsSql).all(...ftsParams);
     } catch {}
   }
 
-  if (ftsResults.length === 0 && vectorResults.length === 0) return [];
+  if (ftsResults.length === 0 && vectorResults.length === 0) return { concepts: [], total: 0 };
 
   const scores = new Map();
 
@@ -427,10 +438,12 @@ export function searchHybrid({ query, type, tags, limit, alpha } = {}) {
     }
   }
 
-  const sorted = Array.from(scores.values()).sort((a, b) => b.score - a.score).slice(0, searchLimit);
+  const sorted = Array.from(scores.values()).sort((a, b) => b.score - a.score);
+  const total = sorted.length;
 
-  return sorted.map(r => {
-    let tagsParsed = typeof r.tags === 'string' ? JSON.parse(r.tags || '[]') : (r.tags || []);
+  return {
+    concepts: sorted.slice(offset, offset + searchLimit).map(r => {
+      let tagsParsed = typeof r.tags === 'string' ? JSON.parse(r.tags || '[]') : (r.tags || []);
     let snippet = '';
     if (r.description) {
       snippet = r.description;
@@ -452,7 +465,8 @@ export function searchHybrid({ query, type, tags, limit, alpha } = {}) {
       score: Math.round(r.score * 100) / 100,
       snippet
     };
-  });
+  }),
+  total };
 }
 
 export function getConcept(slug, resolveDeps = false, visited = new Set()) {
@@ -466,6 +480,14 @@ export function getConcept(slug, resolveDeps = false, visited = new Set()) {
   const references = db.prepare('SELECT slug, title, type FROM concepts WHERE slug LIKE ? ESCAPE \'\\\' AND source = ?')
     .all(slug.replace(/_/g, '\\_').replace(/%/g, '\\%') + '/%', concept.source)
     .map(r => ({ slug: r.slug, title: r.title, type: r.type }));
+
+  const referencedBy = [];
+  const segments = slug.split('/');
+  for (let i = 1; i < segments.length; i++) {
+    const ancestorSlug = segments.slice(0, i).join('/');
+    const ancestor = db.prepare('SELECT slug, title, type FROM concepts WHERE slug = ?').get(ancestorSlug);
+    if (ancestor) referencedBy.push({ slug: ancestor.slug, title: ancestor.title, type: ancestor.type });
+  }
 
   let dependencies = [];
   if (frontmatter.dependencies && Array.isArray(frontmatter.dependencies)) {
@@ -502,7 +524,8 @@ export function getConcept(slug, resolveDeps = false, visited = new Set()) {
     frontmatter,
     body: concept.body,
     references,
-    dependencies
+    dependencies,
+    referenced_by: referencedBy
   };
   if (resolveDeps) result.resolved = resolved;
   return result;
@@ -551,6 +574,8 @@ export function listConcepts({ type, tags, status, limit, offset } = {}) {
       source: r.source,
       timestamp: r.timestamp,
       body_length: r.body_length,
+      created_at: r.created_at,
+      updated_at: r.updated_at,
       approx_tokens: Math.round((r.body_length || 0) / 4)
     }));
 

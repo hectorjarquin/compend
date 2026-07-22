@@ -158,7 +158,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'compend_search': {
-        const results = searchHybrid(args);
+        const { concepts: results } = searchHybrid(args);
         return {
           content: [{ type: 'text', text: JSON.stringify(results, null, 2) }]
         };
