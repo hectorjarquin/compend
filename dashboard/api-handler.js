@@ -34,8 +34,8 @@ export function createApiHandler(db) {
 
       if (search.trim()) {
         try {
-          const rows = searchHybrid({ query: search, type: type || undefined, limit, alpha: getConfig().search.alpha });
-          return json({ concepts: rows, total: rows.length, limit, offset });
+          const { concepts: rows, total } = searchHybrid({ query: search, type: type || undefined, limit, offset, alpha: getConfig().search.alpha });
+          return json({ concepts: rows, total, limit, offset });
         } catch (e) {
           return err('Search error', 400);
         }

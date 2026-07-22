@@ -135,18 +135,6 @@ const server = http.createServer((req, res) => {
       const handleApi = createApiHandler(DB);
       const result = handleApi(pathname, req.method, params) || err('Not found', 404);
 
-      if (result.status === 200 && result.body) {
-        const indexMatch = pathname.match(/^\/api\/notify$/);
-        if (indexMatch && req.method === 'POST') {
-          try {
-            const data = JSON.parse(result.body);
-            if (data && data.event) {
-              broadcast(data.event, { counts: { added: data.added, updated: data.updated, removed: data.removed, total: data.total } });
-            }
-          } catch {}
-        }
-      }
-
       res.writeHead(result.status, result.headers);
       res.end(result.body);
       return;
