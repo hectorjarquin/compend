@@ -53,7 +53,7 @@ Browse, search and read knowledge concepts visually at `http://localhost:3457`.
 
 Port configurable via `~/.compend/config.json` or `COMPEND_PORT`.
 
-**Features:** dark/light theme toggle with SVG icon, WCAG 2.1 AA accessibility (keyboard navigation, ARIA labels, focus-visible outlines), real-time SSE updates (no polling), toast notifications, skeleton loading, search with debounce, type, tag, and status filters, expandable detail rows with rendered markdown body.
+**Features:** dark/light theme toggle with SVG icon, WCAG 2.1 AA accessibility (keyboard navigation, ARIA labels, focus-visible outlines), real-time SSE updates (no polling), toast notifications, skeleton loading, search with debounce, type, tag, and status filters, preview modal with history navigation, referenced-by and references selectors, full markdown body rendering.
 
 ## Installation
 
@@ -201,6 +201,8 @@ The dashboard exposes REST endpoints:
 | `GET` | `/api/tags?type=` | List tags with concept counts, optional type filter |
 | `GET` | `/api/concepts?type=&status=&tags=&search=&limit=&offset=` | Paginated concept list. `search=` triggers FTS+vector. |
 | `GET` | `/api/concepts/{slug}` | Full concept including frontmatter, body, references, and dependencies |
+| `GET` | `/api/changes?since=` | List concepts updated since a Unix timestamp |
+| `GET` | `/api/deps/{slug}` | Get dependency graph (dependencies + dependents) for a concept |
 | `POST` | `/api/notify` | SSE event relay from MCP server (internal — called by `notifyDash()`) |
 | `GET` | `/api/events` | SSE (Server-Sent Events) stream for real-time dashboard updates |
 
@@ -410,8 +412,13 @@ compend/
 │   ├── api-handler.js      Dashboard REST API routes
 │   └── public/
 │       ├── index.html      Dashboard HTML + ARIA structure
-│       ├── style.css       Full theme (dark/light), toast, skeleton
-│       ├── app.js          Frontend SSE client, keyboard nav, WCAG 2.1 AA
+│       ├── tokens.css      Shadcn design tokens + font-face
+│       ├── style.css       Dashboard layout, skeleton, toast
+│       ├── app.js          Frontend SSE client, filters, preview modal
+│       ├── tailwind-v4.js  Tailwind CSS v4 JIT (local, no CDN)
+│       ├── basecoat-base.min.css  Basecoat component library
+│       ├── basecoat-all.min.js    Basecoat JS controllers
+│       ├── fonts/           Atkinson Hyperlegible (4 weights)
 │       └── logo.svg        Logo (48x48, currentColor)
 ├── db.js                   SQLite init, CRUD, hybrid FTS+vec search
 ├── embedding.js            MurmurHash3 → 256-dim float vector

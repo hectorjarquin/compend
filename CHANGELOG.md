@@ -5,6 +5,28 @@ All notable changes to Compend will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-07-21
+
+### Added
+- Dashboard redesign: Basecoat component library + Tailwind CSS v4 with
+  shadcn design tokens (Atkinson Hyperlegible fonts, `.dark` class theme
+  toggle, local static assets, zero CDN dependency)
+- Preview modal with history navigation, referenced-by and references
+  selectors, full markdown body rendering (replaces expandable detail rows)
+- Badge colors: typeColors (7 hues across skill/agent/instruction/prompt/
+  workflow/reference/knowledge) and statusColors (stable/draft/deprecated)
+- `inferType()` now enforces lowercase with automatic type normalization
+  migration and one-time DB backup safeguard
+- `getConcept()` now returns `referenced_by` — ancestor traversal via slug
+  path splitting for reverse dependency navigation
+- `listConcepts()` now returns `created_at` and `updated_at` timestamps
+  in each concept result
+
+### Fixed
+- Stale MCP server version string in `index.js` (was `2.0.3`, now `2.1.0`)
+- Dead SSE re-broadcast code in `dashboard.js` that parsed `{ ok: true }`
+  notification responses with no effect
+
 ## [2.0.4] - 2026-07-11
 
 ### Added
